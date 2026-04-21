@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Piedad 17</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0F172A"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Piedad 17"/>
+  <link rel="apple-touch-icon" href="icon-180.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
+
+  <!-- SEO/Social -->
+  <meta name="description" content="Control de inventario del hogar — Piedad 17"/>
+  <meta property="og:title" content="Piedad 17"/>
+  <meta property="og:description" content="Inventario del hogar para toda la familia"/>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #F8FAFC;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+    #root { height: 100%; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+
+    /* Loading screen */
+    #splash {
+      position: fixed; inset: 0;
+      background: #0F172A;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity .4s ease;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; }
+    #splash-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem; font-weight: 800;
+      color: #fff; letter-spacing: -1px;
+    }
+    #splash-logo span { color: #0EA5E9; }
+    #splash-sub {
+      color: #475569; font-size: .85rem; margin-top: 8px;
+    }
+    #splash-dots {
+      display: flex; gap: 6px; margin-top: 28px;
+    }
+    #splash-dots span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #0EA5E9;
+      animation: dot-pulse 1.2s ease-in-out infinite;
+    }
+    #splash-dots span:nth-child(2) { animation-delay: .2s; }
+    #splash-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes dot-pulse {
+      0%, 80%, 100% { transform: scale(.5); opacity: .3; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Install banner */
+    #install-banner {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #0F172A; border-top: 1px solid #1E293B;
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 12;
+      z-index: 200;
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    #install-banner.show { transform: translateY(0); }
+    #install-banner img { width: 40px; height: 40px; border-radius: 10px; }
+    #install-banner .ib-text { flex: 1; }
+    #install-banner .ib-title { font-weight: 700; color: #fff; font-size: .9rem; }
+    #install-banner .ib-sub { color: #64748B; font-size: .75rem; margin-top: 1px; }
+    #install-banner .ib-btn {
+      background: #0EA5E9; color: #fff; border: none;
+      padding: 8px 18px; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-weight: 700;
+      font-size: .82rem; cursor: pointer; white-space: nowrap;
+    }
+    #install-banner .ib-close {
+      background: none; border: none; color: #475569;
+      cursor: pointer; padding: 4px; font-size: 1.2rem; line-height: 1;
+    }
+
+    /* App transitions */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeUp .25s ease both; }
+    @keyframes pop {
+      0%   { transform: scale(.95); }
+      60%  { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    .pop { animation: pop .18s ease; }
+    .item-row { transition: transform .15s; }
+    .item-row:hover { transform: translateX(3px); }
+    .icon-btn:hover { opacity: .72; }
+    .tag-btn { transition: all .15s; }
+    .tag-btn:hover { opacity: .8; }
+    .main-btn { transition: all .15s !important; }
+    .main-btn:hover { opacity: .88; transform: translateY(-1px); }
+    .main-btn:active { transform: translateY(0) !important; }
+    input:focus, select:focus {
+      border-color: #0EA5E9 !important;
+      box-shadow: 0 0 0 3px rgba(14,165,233,.14);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Splash screen -->
+  <div id="splash">
+    <div id="splash-logo">Piedad <span>17</span></div>
+    <div id="splash-sub">Inventario del hogar</div>
+    <div id="splash-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Install PWA banner -->
+  <div id="install-banner">
+    <img src="icon-192.png" alt="Piedad 17"/>
+    <div class="ib-text">
+      <div class="ib-title">Instalar Piedad 17</div>
+      <div class="ib-sub">Acceso rápido desde tu pantalla de inicio</div>
+    </div>
+    <button class="ib-btn" id="install-btn">Instalar</button>
+    <button class="ib-close" id="install-close">✕</button>
+  </div>
+
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ── CONSTANTS ─────────────────────────────────────────────────────────────
+    const STORAGE_KEY = 'piedad17-v1';
+
+    const CATEGORIAS = [
+      { id:'alimentos', label:'Alimentos',  emoji:'🥦', color:'#16A34A', bg:'#F0FDF4', light:'#DCFCE7' },
+      { id:'bebidas',   label:'Bebidas',    emoji:'🥤', color:'#0284C7', bg:'#F0F9FF', light:'#E0F2FE' },
+      { id:'limpieza',  label:'Limpieza',   emoji:'🧹', color:'#D97706', bg:'#FFFBEB', light:'#FEF3C7' },
+      { id:'higiene',   label:'Higiene',    emoji:'🧴', color:'#7C3AED', bg:'#F5F3FF', light:'#EDE9FE' },
+      { id:'panaderia', label:'Panadería',  emoji:'🍞', color:'#DC2626', bg:'#FFF1F2', light:'#FFE4E6' },
+      { id:'mascotas',  label:'Mascotas',   emoji:'🐾', color:'#C026D3', bg:'#FDF4FF', light:'#FAE8FF' },
+      { id:'otros',     label:'Otros',      emoji:'📦', color:'#475569', bg:'#F8FAFC', light:'#F1F5F9' },
+    ];
+    const UNIDADES = ['un','kg','g','L','ml','cja','paq','doc','lata','sobre'];
+    const SUGERENCIAS_MASCOTAS = [
+      'Alimento para perro','Alimento para gato','Agua fresca','Arena para gato',
+      'Antipulgas','Vitaminas','Golosinas','Shampoo','Pañales','Medicamentos',
+      'Collar','Correa','Juguetes',
+    ];
+    const getCat = id => CATEGORIAS.find(c => c.id === id) || CATEGORIAS[6];
+    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    // ── STORAGE (localStorage) ─────────────────────────────────────────────
+    const loadStorage = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    };
+    const saveStorage = (items) => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+    };
+
+    // ── EXPORT / IMPORT ────────────────────────────────────────────────────
+    const exportData = (items) => {
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(items))));
+      return encoded;
+    };
+    const importData = (code) => {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+        if (Array.isArray(decoded)) return decoded;
+      } catch {}
+      return null;
+    };
+
+    // ── ICONS ──────────────────────────────────────────────────────────────
+    const Ico = ({ n, s = 16 }) => {
+      const p = { width:s, height:s, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round' };
+      const d = {
+        plus:    <svg {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+        trash:   <svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>,
+        check:   <svg {...p} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
+        cart:    <svg {...p}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg>,
+        home:    <svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+        paw:     <svg {...p}><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="7" cy="14" r="2"/><path d="M15 14a5 5 0 00-5.5-4.5 5 5 0 00-3.5 7.5l3 3a2 2 0 002.5.5l1-.5 1 .5a2 2 0 002.5-.5l1-1a5 5 0 00-2-5z"/></svg>,
+        edit:    <svg {...p}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>,
+        refresh: <svg {...p}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>,
+        share:   <svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+        download:<svg {...p}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+        upload:  <svg {...p}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+        x:       <svg {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+        bell:    <svg {...p}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
+      };
+      return d[n] || null;
+    };
+
+    // ── STYLES ─────────────────────────────────────────────────────────────
+    const T = {
+      app: { fontFamily:"'DM Sans', system-ui, sans-serif", minHeight:'100vh', background:'#F8FAFC', paddingBottom: 20 },
+      header: { background:'#0F172A', padding:'env(safe-area-inset-top, 0px) 20px 24px', paddingTop:'max(env(safe-area-inset-top, 0px), 20px)', position:'relative', overflow:'hidden' },
+      logo: { fontFamily:"'Syne', sans-serif", fontSize:'clamp(1.5rem,5vw,2rem)', fontWeight:800, color:'#fff', letterSpacing:'-0.5px' },
+      logoAccent: { color:'#0EA5E9' },
+      headerSub: { color:'#475569', fontSize:'.8rem', fontWeight:500, marginTop:3 },
+      statsRow: { display:'flex', gap:7, marginTop:14, flexWrap:'wrap' },
+      pill: (bg, c) => ({ background:bg, color:c, padding:'4px 12px', borderRadius:50, fontSize:'.75rem', fontWeight:700, display:'flex', alignItems:'center', gap:4 }),
+      nav: { background:'#fff', borderBottom:'1px solid #E2E8F0', display:'flex', position:'sticky', top:0, zIndex:100 },
+      navBtn: a => ({ flex:1, padding:'13px 0', border:'none', background:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:700, fontSize:'.82rem', color: a ? '#0F172A' : '#94A3B8', borderBottom: a ? '2px solid #0EA5E9' : '2px solid transparent', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all .2s' }),
+      wrap: { maxWidth:700, margin:'0 auto', padding:'18px 13px 80px' },
+      card: { background:'#fff', borderRadius:16, padding:18, boxShadow:'0 1px 4px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0', marginBottom:16 },
+      cardTitle: { fontFamily:"'Syne', sans-serif", fontWeight:700, fontSize:'.93rem', color:'#0F172A', marginBottom:13, display:'flex', alignItems:'center', gap:7 },
+      row2: { display:'flex', gap:7, flexWrap:'wrap', marginBottom:7 },
+      inp: { padding:'9px 12px', borderRadius:10, border:'1.5px solid #E2E8F0', fontFamily:"'DM Sans', sans-serif", fontSize:'.88rem', color:'#0F172A', background:'#fff', transition:'border .15s' },
+      sel: { padding:'9px 12px', borderRadius:10, border:'1.5px solid #E2E8F0', fontFamily:"'DM Sans', sans-serif", fontSize:'.88rem', color:'#0F172A', background:'#fff', cursor:'pointer' },
+      btn: (bg, fg='#fff') => ({ padding:'9px 17px', borderRadius:10, border:'none', background:bg, color:fg, fontFamily:"'DM Sans', sans-serif", fontWeight:700, fontSize:'.87rem', cursor:'pointer', display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' }),
+      scrollRow: { display:'flex', gap:7, overflowX:'auto', paddingBottom:4, marginBottom:8, scrollbarWidth:'none' },
+      chip: (a, c, bg) => ({ padding:'5px 13px', borderRadius:50, border:'none', background: a ? bg : '#F1F5F9', color: a ? c : '#94A3B8', fontFamily:"'DM Sans', sans-serif", fontWeight:700, fontSize:'.76rem', cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s', outline: a ? `1.5px solid ${c}` : 'none', outlineOffset:1 }),
+      itemRow: s => ({ background:'#fff', borderRadius:13, padding:'12px 14px', marginBottom:7, display:'flex', alignItems:'center', gap:10, boxShadow:'0 1px 3px rgba(0,0,0,0.05)', border:'1px solid #F1F5F9', borderLeft:`3px solid ${s==='tengo'?'#16A34A':'#0EA5E9'}` }),
+      catDot: id => { const c = getCat(id); return { width:38, height:38, borderRadius:10, background:c.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', flexShrink:0 }; },
+      iBtn: c => ({ width:32, height:32, border:'none', borderRadius:8, background:`${c}18`, color:c, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }),
+      tag: (c, bg) => ({ display:'inline-flex', alignItems:'center', padding:'1px 8px', borderRadius:50, background:bg, color:c, fontSize:'.68rem', fontWeight:700, marginLeft:6, verticalAlign:'middle' }),
+      empty: { textAlign:'center', padding:'48px 20px', color:'#CBD5E1' },
+      sectionCard: { background:'#fff', borderRadius:16, padding:17, boxShadow:'0 1px 4px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0', marginBottom:13 },
+    };
+
+    // ── APP ────────────────────────────────────────────────────────────────
+    function App() {
+      const [tab, setTab] = useState(() => {
+        const h = window.location.hash.replace('#','');
+        return ['inventario','mascotas','compras','sync'].includes(h) ? h : 'inventario';
+      });
+      const [items, setItems] = useState(() => loadStorage());
+      const [filterCat, setFilterCat] = useState('all');
+      const [filterStatus, setFilterStatus] = useState('all');
+      const [form, setForm] = useState({ name:'', qty:'1', unit:'un', cat:'alimentos', status:'tengo' });
+      const [editId, setEditId] = useState(null);
+      const [lastSync, setLastSync] = useState(new Date());
+      const [showTips, setShowTips] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [importCode, setImportCode] = useState('');
+      const [importMsg, setImportMsg] = useState('');
+      const [copied, setCopied] = useState(false);
+      const toastTimer = useRef(null);
+
+      const showToast = (msg, color='#16A34A') => {
+        clearTimeout(toastTimer.current);
+        setToast({ msg, color });
+        toastTimer.current = setTimeout(() => setToast(null), 2500);
+      };
+
+      const persist = (next) => {
+        saveStorage(next);
+        setItems(next);
+        setLastSync(new Date());
+      };
+
+      const handleSubmit = () => {
+        if (!form.name.trim()) return;
+        const item = { id: editId || uid(), name: form.name.trim(), qty: Number(form.qty)||1, unit: form.unit, cat: form.cat, status: form.status, updatedAt: new Date().toISOString() };
+        persist(editId ? items.map(i => i.id===editId ? item : i) : [...items, item]);
+        setForm({ name:'', qty:'1', unit:'un', cat: form.cat, status:'tengo' });
+        setEditId(null);
+        showToast(editId ? '✏️ Artículo actualizado' : '✅ Artículo agregado');
+      };
+
+      const toggleStatus = (id) => {
+        const next = items.map(i => i.id===id ? {...i, status: i.status==='tengo'?'comprar':'tengo', updatedAt: new Date().toISOString()} : i);
+        persist(next);
+      };
+
+      const deleteItem = (id) => {
+        persist(items.filter(i => i.id !== id));
+        showToast('🗑️ Artículo eliminado', '#DC2626');
+      };
+
+      const startEdit = (item) => {
+        setForm({ name:item.name, qty:String(item.qty), unit:item.unit, cat:item.cat, status:item.status });
+        setEditId(item.id);
+        setTab('inventario');
+        window.scrollTo({top:0, behavior:'smooth'});
+      };
+
+      const markBought = (id) => {
+        persist(items.map(i => i.id===id ? {...i, status:'tengo', updatedAt: new Date().toISOString()} : i));
+        showToast('🛒 ¡Comprado! Artículo en inventario');
+      };
+
+      const handleExport = () => {
+        const code = exportData(items);
+        navigator.clipboard.writeText(code).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          showToast('📋 Código copiado al portapapeles');
+        }).catch(() => showToast('⚠️ No se pudo copiar — copia manualmente'));
+      };
+
+      const handleImport = () => {
+        const data = importData(importCode);
+        if (!data) { setImportMsg('❌ Código inválido. Verifica e intenta de nuevo.'); return; }
+        persist(data);
+        setImportCode('');
+        setImportMsg('');
+        showToast('✅ Datos importados correctamente');
+      };
+
+      const handleShare = () => {
+        const text = `🏠 *Piedad 17 — Lista de Compras*\n\n` +
+          items.filter(i=>i.status==='comprar').map(i => `• ${i.name} (${i.qty} ${i.unit})`).join('\n') +
+          `\n\n_${new Date().toLocaleDateString('es-ES')}_`;
+        if (navigator.share) {
+          navigator.share({ title:'Piedad 17 — Lista de Compras', text });
+        } else {
+          navigator.clipboard.writeText(text).then(() => showToast('📋 Lista copiada'));
+        }
+      };
+
+      // Derived
+      const tengoCount   = items.filter(i => i.status==='tengo').length;
+      const comprarCount = items.filter(i => i.status==='comprar').length;
+      const mascotasComprar = items.filter(i => i.cat==='mascotas' && i.status==='comprar').length;
+
+      const filtered = items.filter(i =>
+        (filterCat==='all' || i.cat===filterCat) && (filterStatus==='all' || i.status===filterStatus)
+      );
+
+      const shoppingList = items.filter(i => i.status==='comprar');
+      const byCat = CATEGORIAS.map(c => ({...c, items: shoppingList.filter(i=>i.cat===c.id)})).filter(c=>c.items.length>0);
+
+      const tabChange = (t) => {
+        setTab(t);
+        window.location.hash = t;
+      };
+
+      return (
+        <div style={T.app}>
+
+          {/* Toast */}
+          {toast && (
+            <div style={{ position:'fixed', top:16, left:'50%', transform:'translateX(-50%)', background:toast.color, color:'#fff', padding:'9px 20px', borderRadius:50, fontWeight:700, fontSize:'.84rem', zIndex:9999, boxShadow:'0 4px 20px rgba(0,0,0,0.18)', whiteSpace:'nowrap', animation:'fadeUp .2s ease' }}>
+              {toast.msg}
+            </div>
+          )}
+
+          {/* HEADER */}
+          <div style={T.header}>
+            <div style={{ position:'absolute', width:200, height:200, borderRadius:'50%', background:'rgba(14,165,233,0.08)', top:-80, right:-60, pointerEvents:'none' }}/>
+            <div style={{ position:'absolute', width:100, height:100, borderRadius:'50%', background:'rgba(192,38,211,0.07)', bottom:-30, left:'40%', pointerEvents:'none' }}/>
+            <div style={T.logo}>Piedad <span style={T.logoAccent}>17</span></div>
+            <div style={T.headerSub}>Control de inventario del hogar</div>
+            <div style={T.statsRow}>
+              <div style={T.pill('#1E293B','#94A3B8')}>📦 {items.length} artículos</div>
+              <div style={T.pill('rgba(22,163,74,.18)','#16A34A')}>✅ {tengoCount} en casa</div>
+              <div style={T.pill('rgba(2,132,199,.18)','#0284C7')}>🛒 {comprarCount} por comprar</div>
+              {mascotasComprar > 0 && <div style={T.pill('rgba(192,38,211,.18)','#C026D3')}>🐾 {mascotasComprar} mascotas</div>}
+            </div>
+          </div>
+
+          {/* NAV */}
+          <div style={T.nav}>
+            {[
+              { id:'inventario', label:'Inventario', ico:'home', badge:0 },
+              { id:'mascotas',   label:'Mascotas',   ico:'paw',  badge:mascotasComprar },
+              { id:'compras',    label:'Compras',    ico:'cart', badge:comprarCount },
+              { id:'sync',       label:'Sincronizar',ico:'share',badge:0 },
+            ].map(({id, label, ico, badge}) => (
+              <button key={id} style={T.navBtn(tab===id)} onClick={() => tabChange(id)}>
+                <Ico n={ico} s={15}/>
+                <span style={{ display: window.innerWidth < 400 ? 'none' : 'inline' }}>{label}</span>
+                {badge > 0 && (
+                  <span style={{ background: id==='mascotas'?'#C026D3':'#0EA5E9', color:'#fff', borderRadius:50, minWidth:18, height:18, padding:'0 4px', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'.68rem', fontWeight:800 }}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div style={T.wrap}>
+
+            {/* ── INVENTARIO ──────────────────────────────────────────────── */}
+            {tab==='inventario' && (
+              <div className="fade-in">
+                {/* Form */}
+                <div style={T.card}>
+                  <div style={T.cardTitle}>
+                    <Ico n={editId?'edit':'plus'} s={15}/>{editId ? 'Editar artículo' : 'Nuevo artículo'}
+                  </div>
+                  <div style={T.row2}>
+                    <input style={{...T.inp, flex:'2 1 150px'}} placeholder="Nombre (ej: Arroz, Leche…)" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onKeyDown={e=>e.key==='Enter'&&handleSubmit()}/>
+                    <input style={{...T.inp, width:60}} type="number" min="0" step="0.1" placeholder="Cant" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})}/>
+                    <select style={{...T.sel}} value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})}>
+                      {UNIDADES.map(u=><option key={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div style={T.row2}>
+                    <select style={{...T.sel, flex:'1 1 140px'}} value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})}>
+                      {CATEGORIAS.map(c=><option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+                    </select>
+                    <select style={{...T.sel, flex:'1 1 130px'}} value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+                      <option value="tengo">✅ Lo tengo</option>
+                      <option value="comprar">🛒 Por comprar</option>
+                    </select>
+                    <button className="main-btn" style={{...T.btn('#0F172A'), flex:'0 0 auto'}} onClick={handleSubmit}>
+                      <Ico n={editId?'check':'plus'} s={14}/>{editId?'Guardar':'Agregar'}
+                    </button>
+                    {editId && <button style={{...T.btn('#F1F5F9','#64748B')}} onClick={()=>{setEditId(null);setForm({name:'',qty:'1',unit:'un',cat:'alimentos',status:'tengo'})}}><Ico n="x" s={14}/></button>}
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div style={T.scrollRow}>
+                  {[{id:'all',label:'Todos',c:'#0F172A',bg:'#F1F5F9'},{id:'tengo',label:'✅ Tengo',c:'#16A34A',bg:'#DCFCE7'},{id:'comprar',label:'🛒 Comprar',c:'#0284C7',bg:'#E0F2FE'}].map(f=>(
+                    <button key={f.id} className="tag-btn" style={T.chip(filterStatus===f.id,f.c,f.bg)} onClick={()=>setFilterStatus(f.id)}>{f.label}</button>
+                  ))}
+                </div>
+                <div style={{...T.scrollRow, marginBottom:4}}>
+                  <button className="tag-btn" style={T.chip(filterCat==='all','#475569','#F1F5F9')} onClick={()=>setFilterCat('all')}>Todas</button>
+                  {CATEGORIAS.map(c=>(
+                    <button key={c.id} className="tag-btn" style={T.chip(filterCat===c.id,c.color,c.light)} onClick={()=>setFilterCat(filterCat===c.id?'all':c.id)}>{c.emoji} {c.label}</button>
+                  ))}
+                </div>
+
+                {/* Sync info */}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'8px 0', borderBottom:'1px solid #F1F5F9', paddingBottom:8 }}>
+                  <span style={{ fontSize:'.72rem', color:'#CBD5E1' }}>
+                    {items.length > 0 ? `${filtered.length} artículo${filtered.length!==1?'s':''} mostrado${filtered.length!==1?'s':''}` : 'Sin artículos'}
+                  </span>
+                  <span style={{ fontSize:'.72rem', color:'#CBD5E1' }}>
+                    {lastSync.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}
+                  </span>
+                </div>
+
+                {/* List */}
+                {filtered.length === 0 ? (
+                  <div style={T.empty}>
+                    <div style={{ fontSize:'2.5rem', marginBottom:10 }}>🗃️</div>
+                    <div style={{ fontWeight:700, color:'#CBD5E1' }}>Sin artículos</div>
+                    <div style={{ fontSize:'.82rem', marginTop:4, color:'#E2E8F0' }}>Usa el formulario para agregar tu primer artículo</div>
+                  </div>
+                ) : (
+                  filtered.map(item => {
+                    const cat = getCat(item.cat);
+                    return (
+                      <div key={item.id} className="item-row" style={T.itemRow(item.status)}>
+                        <div style={T.catDot(item.cat)}>{cat.emoji}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontWeight:600, fontSize:'.92rem', color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            {item.name}
+                            <span style={T.tag(cat.color, cat.light)}>{cat.label}</span>
+                          </div>
+                          <div style={{ fontSize:'.74rem', color:'#94A3B8', marginTop:2 }}>
+                            {item.qty} {item.unit} ·{' '}
+                            <span style={{ color:item.status==='tengo'?'#16A34A':'#0284C7', fontWeight:600 }}>
+                              {item.status==='tengo'?'En casa':'Por comprar'}
+                            </span>
+                          </div>
+                        </div>
+                        <button className="icon-btn" title="Cambiar estado" style={T.iBtn(item.status==='tengo'?'#0284C7':'#16A34A')} onClick={()=>toggleStatus(item.id)}>
+                          {item.status==='tengo'?<Ico n="cart" s={14}/>:<Ico n="check" s={14}/>}
+                        </button>
+                        <button className="icon-btn" title="Editar" style={T.iBtn('#7C3AED')} onClick={()=>startEdit(item)}><Ico n="edit" s={14}/></button>
+                        <button className="icon-btn" title="Eliminar" style={T.iBtn('#DC2626')} onClick={()=>deleteItem(item.id)}><Ico n="trash" s={14}/></button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* ── MASCOTAS ──────────────────────────────────────────────── */}
+            {tab==='mascotas' && (
+              <div className="fade-in">
+                {/* Banner */}
+                <div style={{ background:'linear-gradient(135deg,#FDF4FF,#F5F3FF)', borderRadius:16, padding:18, border:'1px solid #E9D5FF', marginBottom:16 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:11, marginBottom:12 }}>
+                    <div style={{ width:46, height:46, borderRadius:14, background:'#F3E8FF', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem' }}>🐾</div>
+                    <div>
+                      <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize:'1.05rem', color:'#581C87' }}>Inventario Mascotas</div>
+                      <div style={{ fontSize:'.76rem', color:'#A855F7', marginTop:2 }}>Todo para tus compañeros</div>
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
+                    <div style={T.pill('#F3E8FF','#7C3AED')}>📦 {items.filter(i=>i.cat==='mascotas').length} artículos</div>
+                    <div style={T.pill('#F0FDF4','#16A34A')}>✅ {items.filter(i=>i.cat==='mascotas'&&i.status==='tengo').length} disponibles</div>
+                    <div style={T.pill('#EFF6FF','#1D4ED8')}>🛒 {mascotasComprar} por comprar</div>
+                  </div>
+                </div>
+
+                {/* Quick add */}
+                <div style={T.card}>
+                  <div style={T.cardTitle}><Ico n="plus" s={14}/> Agregar para mascota</div>
+                  <div style={T.row2}>
+                    <input style={{...T.inp, flex:'2 1 150px'}} placeholder="Ej: Alimento para perro" value={form.cat==='mascotas'?form.name:''} onChange={e=>setForm({...form,name:e.target.value,cat:'mascotas'})} onKeyDown={e=>{if(e.key==='Enter'){setForm(f=>({...f,cat:'mascotas'}));handleSubmit();}}}/>
+                    <input style={{...T.inp, width:58}} type="number" min="0" step="0.1" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value,cat:'mascotas'})}/>
+                    <select style={T.sel} value={form.unit} onChange={e=>setForm({...form,unit:e.target.value})}>
+                      {UNIDADES.map(u=><option key={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div style={T.row2}>
+                    <select style={{...T.sel, flex:'1 1 130px'}} value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+                      <option value="tengo">✅ Lo tengo</option>
+                      <option value="comprar">🛒 Por comprar</option>
+                    </select>
+                    <button className="main-btn" style={{...T.btn('#C026D3')}} onClick={()=>{setForm(f=>({...f,cat:'mascotas'}));setTimeout(handleSubmit,0);}}>
+                      <Ico n="paw" s={14}/> Agregar
+                    </button>
+                  </div>
+                  {/* Sugerencias */}
+                  <button style={{ background:'none', border:'none', cursor:'pointer', color:'#A855F7', fontSize:'.76rem', fontFamily:"'DM Sans', sans-serif", fontWeight:600, display:'flex', alignItems:'center', gap:4, marginTop:8 }} onClick={()=>setShowTips(!showTips)}>
+                    💡 Sugerencias frecuentes {showTips?'▲':'▼'}
+                  </button>
+                  {showTips && (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:8 }}>
+                      {SUGERENCIAS_MASCOTAS.map(s=>(
+                        <button key={s} className="tag-btn" style={{ padding:'4px 10px', borderRadius:50, border:'1px solid #E9D5FF', background:'#FDF4FF', color:'#7C3AED', fontFamily:"'DM Sans', sans-serif", fontSize:'.74rem', fontWeight:600, cursor:'pointer' }}
+                          onClick={()=>setForm(f=>({...f,name:s,cat:'mascotas'}))}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mascotas list */}
+                {items.filter(i=>i.cat==='mascotas').length === 0 ? (
+                  <div style={{...T.empty, background:'#fff', borderRadius:16, border:'1px solid #E2E8F0'}}>
+                    <div style={{ fontSize:'3rem', marginBottom:10 }}>🐶🐱</div>
+                    <div style={{ fontWeight:700, color:'#CBD5E1' }}>Sin artículos de mascotas</div>
+                    <div style={{ fontSize:'.82rem', marginTop:4, color:'#E2E8F0' }}>Agrega lo que necesitan tus compañeros</div>
+                  </div>
+                ) : (
+                  items.filter(i=>i.cat==='mascotas').map(item => (
+                    <div key={item.id} className="item-row" style={{...T.itemRow(item.status), borderLeft:'3px solid #C026D3'}}>
+                      <div style={{ width:38, height:38, borderRadius:10, background:'#FDF4FF', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', flexShrink:0 }}>🐾</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:'.92rem', color:'#0F172A' }}>{item.name}</div>
+                        <div style={{ fontSize:'.74rem', color:'#94A3B8', marginTop:2 }}>
+                          {item.qty} {item.unit} · <span style={{ color:item.status==='tengo'?'#16A34A':'#C026D3', fontWeight:600 }}>{item.status==='tengo'?'Disponible':'Por comprar'}</span>
+                        </div>
+                      </div>
+                      <button className="icon-btn" style={T.iBtn(item.status==='tengo'?'#C026D3':'#16A34A')} onClick={()=>toggleStatus(item.id)}>
+                        {item.status==='tengo'?<Ico n="cart" s={14}/>:<Ico n="check" s={14}/>}
+                      </button>
+                      <button className="icon-btn" style={T.iBtn('#7C3AED')} onClick={()=>startEdit(item)}><Ico n="edit" s={14}/></button>
+                      <button className="icon-btn" style={T.iBtn('#DC2626')} onClick={()=>deleteItem(item.id)}><Ico n="trash" s={14}/></button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* ── COMPRAS ──────────────────────────────────────────────── */}
+            {tab==='compras' && (
+              <div className="fade-in">
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+                  <div>
+                    <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize:'1.25rem', color:'#0F172A' }}>🛒 Lista de compras</div>
+                    <div style={{ fontSize:'.78rem', color:'#94A3B8', marginTop:2 }}>
+                      {comprarCount===0 ? '¡Todo en casa! 🎉' : `${comprarCount} artículo${comprarCount!==1?'s':''} pendiente${comprarCount!==1?'s':''}`}
+                    </div>
+                  </div>
+                  {comprarCount > 0 && (
+                    <button className="main-btn" style={{...T.btn('#0F172A'), fontSize:'.8rem', padding:'7px 14px'}} onClick={handleShare}>
+                      <Ico n="share" s={13}/> Compartir
+                    </button>
+                  )}
+                </div>
+
+                {shoppingList.length === 0 ? (
+                  <div style={{...T.empty, background:'#fff', borderRadius:16, border:'1px solid #E2E8F0'}}>
+                    <div style={{ fontSize:'3.5rem', marginBottom:12 }}>🎉</div>
+                    <div style={{ fontWeight:700, fontSize:'1rem', color:'#475569' }}>¡Inventario completo!</div>
+                    <div style={{ fontSize:'.84rem', color:'#94A3B8', marginTop:6 }}>No hay artículos pendientes por comprar</div>
+                  </div>
+                ) : (
+                  <>
+                    {byCat.map(cat=>(
+                      <div key={cat.id} style={T.sectionCard}>
+                        <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:13 }}>
+                          <div style={{ width:36, height:36, borderRadius:9, background:cat.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem' }}>{cat.emoji}</div>
+                          <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:700, fontSize:'.92rem', color:cat.color, flex:1 }}>{cat.label}</div>
+                          <span style={T.tag(cat.color, cat.light)}>{cat.items.length} ítem{cat.items.length!==1?'s':''}</span>
+                        </div>
+                        {cat.items.map(item=>(
+                          <div key={item.id} style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 0', borderBottom:'1px solid #F8FAFC' }}>
+                            <div style={{ flex:1 }}>
+                              <span style={{ fontWeight:600, color:'#0F172A', fontSize:'.88rem' }}>{item.name}</span>
+                              <span style={{ color:'#94A3B8', fontSize:'.76rem', marginLeft:7 }}>{item.qty} {item.unit}</span>
+                            </div>
+                            <button className="main-btn" style={{...T.btn('#16A34A'), padding:'6px 12px', fontSize:'.76rem'}} onClick={()=>markBought(item.id)}>
+                              <Ico n="check" s={13}/> Comprado
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    <div style={{ background:'#0F172A', borderRadius:14, padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <div>
+                        <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:800, color:'#fff', fontSize:'.92rem' }}>Total pendiente</div>
+                        <div style={{ fontSize:'.72rem', color:'#475569', marginTop:2 }}>{byCat.length} categoría{byCat.length!==1?'s':''}</div>
+                      </div>
+                      <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize:'2rem', color:'#0EA5E9' }}>{comprarCount}</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── SINCRONIZAR ────────────────────────────────────────────── */}
+            {tab==='sync' && (
+              <div className="fade-in">
+                <div style={{ fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize:'1.25rem', color:'#0F172A', marginBottom:6 }}>🔄 Sincronizar</div>
+                <div style={{ fontSize:'.82rem', color:'#94A3B8', marginBottom:20 }}>Comparte tu inventario con otros miembros de la familia</div>
+
+                {/* Export */}
+                <div style={T.card}>
+                  <div style={T.cardTitle}><Ico n="download" s={14}/> Exportar mis datos</div>
+                  <p style={{ fontSize:'.84rem', color:'#64748B', marginBottom:14, lineHeight:1.5 }}>
+                    Genera un código con todos tus artículos. Compártelo por WhatsApp para que otro dispositivo pueda importarlos.
+                  </p>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                    <button className="main-btn" style={{...T.btn('#0EA5E9')}} onClick={handleExport}>
+                      <Ico n="download" s={14}/>{copied ? '¡Copiado!' : 'Copiar código'}
+                    </button>
+                    <button className="main-btn" style={{...T.btn('#0F172A')}} onClick={handleShare}>
+                      <Ico n="share" s={14}/> Compartir lista
+                    </button>
+                  </div>
+                </div>
+
+                {/* Import */}
+                <div style={T.card}>
+                  <div style={T.cardTitle}><Ico n="upload" s={14}/> Importar datos</div>
+                  <p style={{ fontSize:'.84rem', color:'#64748B', marginBottom:14, lineHeight:1.5 }}>
+                    Pega aquí el código que te compartió otro miembro de la familia para sincronizar el inventario.
+                  </p>
+                  <textarea
+                    style={{...T.inp, width:'100%', minHeight:80, resize:'vertical', marginBottom:10, display:'block', lineHeight:1.5, fontSize:'.78rem', fontFamily:'monospace'}}
+                    placeholder="Pega el código aquí…"
+                    value={importCode}
+                    onChange={e=>setImportCode(e.target.value)}
+                  />
+                  {importMsg && <div style={{ fontSize:'.8rem', color:'#DC2626', marginBottom:10 }}>{importMsg}</div>}
+                  <button className="main-btn" style={{...T.btn('#7C3AED')}} onClick={handleImport}>
+                    <Ico n="upload" s={14}/> Importar
+                  </button>
+                </div>
+
+                {/* Stats */}
+                <div style={T.card}>
+                  <div style={T.cardTitle}><Ico n="bell" s={14}/> Resumen del hogar</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    {CATEGORIAS.map(c=>{
+                      const total = items.filter(i=>i.cat===c.id).length;
+                      const pend  = items.filter(i=>i.cat===c.id&&i.status==='comprar').length;
+                      if (total === 0) return null;
+                      return (
+                        <div key={c.id} style={{ background:c.bg, borderRadius:12, padding:'12px 14px', border:`1px solid ${c.light}` }}>
+                          <div style={{ fontSize:'1.3rem', marginBottom:4 }}>{c.emoji}</div>
+                          <div style={{ fontWeight:700, fontSize:'.82rem', color:c.color }}>{c.label}</div>
+                          <div style={{ fontSize:'.72rem', color:'#94A3B8', marginTop:3 }}>{total} total · {pend} pendiente{pend!==1?'s':''}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    // ── MOUNT ──────────────────────────────────────────────────────────────
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+
+    // Hide splash once React mounts
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+      if (splash) { splash.classList.add('hide'); setTimeout(() => splash.remove(), 500); }
+    }, 600);
+  </script>
+
+  <script>
+    // ── PWA Install Prompt ────────────────────────────────────────────────
+    let deferredPrompt = null;
+    const banner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-btn');
+    const closeBtn = document.getElementById('install-close');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => banner.classList.add('show'), 3000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+      banner.classList.remove('show');
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      banner.classList.remove('show');
+      deferredPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      banner.classList.remove('show');
+      deferredPrompt = null;
+    });
+
+    // ── Service Worker ───────────────────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW registrado:', reg.scope))
+          .catch(err => console.warn('SW error:', err));
+      });
+    }
+  </script>
+</body>
+</html>
