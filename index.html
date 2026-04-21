@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+<title>Piedad 17</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#4F46E5"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Piedad 17"/>
+<link rel="apple-touch-icon" href="icon-180.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root{
+  --brand:#4F46E5;
+  --brand2:#6366F1;
+  --brand3:#818CF8;
+  --bg:#F0F1FF;
+  --card:#FFFFFF;
+  --text:#0F0F23;
+  --sub:#6B7280;
+  --border:#E5E7EB;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;height:-webkit-fill-available}
+body{
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  background:var(--bg);
+  height:100%;
+  height:-webkit-fill-available;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+#root{
+  height:100%;
+  height:-webkit-fill-available;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+::-webkit-scrollbar{display:none}
+*{scrollbar-width:none}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;background:linear-gradient(160deg,#312E81,#4F46E5 60%,#6366F1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease}
+#splash.hide{opacity:0;pointer-events:none}
+.s-ring{width:90px;height:90px;border-radius:28px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:2.4rem;margin-bottom:20px;animation:ring-in .6s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes ring-in{from{transform:scale(.4) rotate(-15deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.s-name{font-weight:900;font-size:2rem;color:#fff;letter-spacing:-1px}
+.s-sub{color:rgba(255,255,255,.5);font-size:.82rem;margin-top:4px;font-weight:500}
+.s-dots{display:flex;gap:5px;margin-top:28px}
+.s-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);animation:dp 1.2s ease-in-out infinite}
+.s-dots span:nth-child(2){animation-delay:.2s}
+.s-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dp{0%,80%,100%{transform:scale(.4);opacity:.2}40%{transform:scale(1);opacity:1}}
+
+/* INSTALL MODAL */
+#install-modal{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:800;display:flex;align-items:flex-end;pointer-events:none;transition:background .3s}
+#install-modal.show{background:rgba(0,0,0,.5);pointer-events:all}
+#install-sheet{background:#fff;border-radius:28px 28px 0 0;padding:12px 20px max(env(safe-area-inset-bottom,0px),24px);transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);width:100%}
+#install-modal.show #install-sheet{transform:translateY(0)}
+.i-handle{width:40px;height:4px;border-radius:2px;background:#E5E7EB;margin:0 auto 20px}
+.i-row{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.i-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#312E81,#4F46E5);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.i-title{font-weight:800;font-size:1.05rem;color:#0F0F23}
+.i-sub{font-size:.78rem;color:#9CA3AF;margin-top:3px}
+.i-feats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.i-feat{background:#F5F5FF;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px}
+.i-feat-ico{font-size:1.1rem}
+.i-feat-text{font-size:.76rem;font-weight:700;color:#4F46E5}
+.i-btns{display:flex;gap:10px}
+.i-install{flex:1;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#312E81,#4F46E5);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:.95rem;cursor:pointer;box-shadow:0 6px 20px rgba(79,70,229,.4)}
+.i-later{padding:14px 18px;border-radius:14px;border:2px solid #E5E7EB;background:#fff;color:#9CA3AF;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.fade-up{animation:fadeUp .3s ease both}
+.scale-in{animation:scaleIn .22s ease both}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#4F46E5!important;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+button:active{opacity:.8;transform:scale(.97)}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="s-ring">🏠</div>
+  <div class="s-name">Piedad 17</div>
+  <div class="s-sub">Inventario del hogar</div>
+  <div class="s-dots"><span></span><span></span><span></span></div>
+</div>
+
+<div id="install-modal">
+  <div id="install-sheet">
+    <div class="i-handle"></div>
+    <div class="i-row">
+      <div class="i-icon">🏠</div>
+      <div>
+        <div class="i-title">Instalar Piedad 17</div>
+        <div class="i-sub">Accede directo desde tu pantalla de inicio</div>
+      </div>
+    </div>
+    <div class="i-feats">
+      <div class="i-feat"><div class="i-feat-ico">⚡</div><div class="i-feat-text">Pantalla completa</div></div>
+      <div class="i-feat"><div class="i-feat-ico">🔄</div><div class="i-feat-text">Sync en tiempo real</div></div>
+      <div class="i-feat"><div class="i-feat-ico">📶</div><div class="i-feat-text">Funciona offline</div></div>
+      <div class="i-feat"><div class="i-feat-ico">🔔</div><div class="i-feat-text">Acceso rápido</div></div>
+    </div>
+    <div class="i-btns">
+      <button class="i-later" id="install-later">Ahora no</button>
+      <button class="i-install" id="install-btn">Instalar app</button>
+    </div>
+  </div>
+</div>
+
+<div id="root"></div>
+
+<script>
+  window.FB_CONFIG = {
+    apiKey:            "AIzaSyCPANIk_qip_1FOprlzWGEZ2CYZlN3nZIc",
+    authDomain:        "lista-de-la-compra-6d49f.firebaseapp.com",
+    databaseURL:       "https://lista-de-la-compra-6d49f-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "lista-de-la-compra-6d49f",
+    storageBucket:     "lista-de-la-compra-6d49f.firebasestorage.app",
+    messagingSenderId: "381315788537",
+    appId:             "1:381315788537:web:7d9457550d8c715df3bc28"
+  };
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const CFG = window.FB_CONFIG || {};
+const IS_READY = !!(CFG.apiKey && CFG.databaseURL);
+let DB_REF = null;
+if (IS_READY) {
+  try {
+    const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(CFG);
+    DB_REF = firebase.database(app).ref('piedad17/items');
+  } catch(e) {}
+}
+
+// ── EMOJI LIBRARY ─────────────────────────────────────────────────────────
+const EMOJI_GROUPS = [
+  { label:'🥗 Verduras', emojis:['🥦','🥬','🥕','🧅','🧄','🫑','🌽','🥑','🫒','🍅','🥝','🫛','🥒','🌶️','🍆'] },
+  { label:'🍖 Carnes',   emojis:['🍗','🥩','🥚','🐟','🦐','🥓','🌭','🍔','🥩','🫀'] },
+  { label:'🥛 Lácteos',  emojis:['🥛','🧀','🧈','🍦','🥜','🫙'] },
+  { label:'🍞 Panadería',emojis:['🍞','🥐','🥖','🫓','🥨','🧁','🍰','🎂','🍪','🥞'] },
+  { label:'🍎 Frutas',   emojis:['🍎','🍊','🍋','🍇','🍓','🍑','🍒','🥭','🍍','🫐','🍈','🍌','🍉'] },
+  { label:'🥤 Bebidas',  emojis:['🥤','☕','🍵','🧃','🍺','🍷','🥂','🫖','🧋','💧','🍶'] },
+  { label:'🧹 Limpieza', emojis:['🧹','🧼','🧽','🧴','🪣','🚿','🪥','🫧','🪒','🧻','🪠'] },
+  { label:'🐾 Mascotas', emojis:['🐾','🐕','🐈','🐠','🐹','🦜','🐇','🦴','🐿️','🪺'] },
+  { label:'💊 Farmacia', emojis:['💊','🩹','🌡️','💉','🩺','🧪','🩻','🫁','❤️‍🩹'] },
+  { label:'📦 Otros',    emojis:['📦','🛒','🏠','⚡','🔋','💡','🔑','📱','💻','🪴','🧸','🎁'] },
+];
+
+const CATS = [
+  {id:'alimentos', label:'Alimentos',  emoji:'🥦', grad:['#10B981','#059669'], bg:'#ECFDF5', light:'#D1FAE5', dark:'#059669'},
+  {id:'bebidas',   label:'Bebidas',    emoji:'🥤', grad:['#3B82F6','#1D4ED8'], bg:'#EFF6FF', light:'#DBEAFE', dark:'#1D4ED8'},
+  {id:'limpieza',  label:'Limpieza',   emoji:'🧹', grad:['#06B6D4','#0284C7'], bg:'#ECFEFF', light:'#CFFAFE', dark:'#0284C7'},
+  {id:'higiene',   label:'Higiene',    emoji:'🧴', grad:['#8B5CF6','#6D28D9'], bg:'#F5F3FF', light:'#EDE9FE', dark:'#6D28D9'},
+  {id:'panaderia', label:'Panadería',  emoji:'🍞', grad:['#F59E0B','#D97706'], bg:'#FFFBEB', light:'#FEF3C7', dark:'#D97706'},
+  {id:'mascotas',  label:'Mascotas',   emoji:'🐾', grad:['#EC4899','#BE185D'], bg:'#FDF2F8', light:'#FCE7F3', dark:'#BE185D'},
+  {id:'otros',     label:'Otros',      emoji:'📦', grad:['#64748B','#475569'], bg:'#F8FAFC', light:'#F1F5F9', dark:'#475569'},
+];
+const UNITS = ['un','kg','g','L','ml','cja','paq','doc','lata','sobre'];
+const gcat = id => CATS.find(c=>c.id===id)||CATS[6];
+const uid  = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+// ── ICONS ─────────────────────────────────────────────────────────────────
+const Ico = ({n,s=20,c='currentColor'}) => {
+  const p={width:s,height:s,viewBox:'0 0 24 24',fill:'none',stroke:c,strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'};
+  return {
+    home:   <svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    list:   <svg {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+    cart:   <svg {...p}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg>,
+    paw:    <svg {...p}><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="7" cy="14" r="2"/><path d="M15 14a5 5 0 00-5.5-4.5 5 5 0 00-3.5 7.5l3 3a2 2 0 002.5.5l1-.5 1 .5a2 2 0 002.5-.5l1-1a5 5 0 00-2-5z"/></svg>,
+    plus:   <svg {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    check:  <svg {...p} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
+    trash:  <svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>,
+    edit:   <svg {...p}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>,
+    share:  <svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+    x:      <svg {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    smile:  <svg {...p}><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
+    back:   <svg {...p}><polyline points="15 18 9 12 15 6"/></svg>,
+  }[n]||null;
+};
+
+// ── EMOJI PICKER ──────────────────────────────────────────────────────────
+function EmojiPicker({ onSelect, onClose }) {
+  const [activeGroup, setActiveGroup] = useState(0);
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:600,display:'flex',alignItems:'flex-end'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="fade-up" style={{background:'#fff',borderRadius:'24px 24px 0 0',width:'100%',maxHeight:'70vh',display:'flex',flexDirection:'column',overflow:'hidden',paddingBottom:'max(env(safe-area-inset-bottom,0px),16px)'}}>
+        <div style={{padding:'12px 16px 0',flexShrink:0}}>
+          <div style={{width:40,height:4,borderRadius:2,background:'#E5E7EB',margin:'0 auto 14px'}}/>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+            <div style={{fontWeight:800,fontSize:'1rem',color:'#0F0F23'}}>Elige un emoji</div>
+            <button onClick={onClose} style={{background:'#F3F4F6',border:'none',borderRadius:50,width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Ico n="x" s={14} c="#6B7280"/></button>
+          </div>
+          {/* Group tabs */}
+          <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:10}}>
+            {EMOJI_GROUPS.map((g,i)=>(
+              <button key={i} onClick={()=>setActiveGroup(i)}
+                style={{padding:'5px 10px',borderRadius:50,border:'none',background:activeGroup===i?'#4F46E5':'#F3F4F6',color:activeGroup===i?'#fff':'#6B7280',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.7rem',cursor:'pointer',whiteSpace:'nowrap',transition:'all .15s'}}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Emoji grid */}
+        <div style={{padding:'8px 16px',overflowY:'auto',flex:1}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+            {EMOJI_GROUPS[activeGroup].emojis.map(e=>(
+              <button key={e} onClick={()=>onSelect(e)}
+                style={{aspectRatio:'1',borderRadius:12,border:'none',background:'#F9FAFB',fontSize:'1.5rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background .1s'}}
+                onMouseEnter={ev=>ev.currentTarget.style.background='#EEF2FF'}
+                onMouseLeave={ev=>ev.currentTarget.style.background='#F9FAFB'}>
+                {e}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ADD/EDIT MODAL ────────────────────────────────────────────────────────
+function ItemModal({ item, defaultCat, onSave, onClose }) {
+  const [form, setForm] = useState({
+    emoji: item?.emoji || gcat(item?.cat||defaultCat||'alimentos').emoji,
+    name:  item?.name  || '',
+    qty:   item ? String(item.qty) : '1',
+    unit:  item?.unit  || 'un',
+    cat:   item?.cat   || defaultCat || 'alimentos',
+    status:item?.status|| 'tengo',
+  });
+  const [showEmoji, setShowEmoji] = useState(false);
+
+  const submit = () => {
+    if(!form.name.trim()) return;
+    onSave(form);
+  };
+
+  return (
+    <>
+    {showEmoji && <EmojiPicker onSelect={e=>{setForm(f=>({...f,emoji:e}));setShowEmoji(false);}} onClose={()=>setShowEmoji(false)}/>}
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:500,display:'flex',alignItems:'flex-end'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="fade-up" style={{background:'#fff',borderRadius:'24px 24px 0 0',width:'100%',maxHeight:'94vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{overflowY:'auto',flex:1,padding:'12px 20px'}}>
+          <div style={{width:40,height:4,borderRadius:2,background:'#E5E7EB',margin:'0 auto 18px'}}/>
+
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:22}}>
+            {/* Emoji button */}
+            <button onClick={()=>setShowEmoji(true)}
+              style={{width:56,height:56,borderRadius:16,border:'2px dashed #E5E7EB',background:'#F9FAFB',fontSize:'1.8rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'border-color .2s'}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor='#4F46E5'}
+              onMouseLeave={e=>e.currentTarget.style.borderColor='#E5E7EB'}>
+              {form.emoji}
+            </button>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'.68rem',fontWeight:700,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>Toca el emoji para cambiar</div>
+              <input
+                style={{width:'100%',padding:'11px 14px',borderRadius:12,border:'2px solid #F3F4F6',fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'1rem',fontWeight:700,color:'#0F0F23',background:'#F9FAFB'}}
+                placeholder="Nombre del artículo…" value={form.name}
+                onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+                onKeyDown={e=>e.key==='Enter'&&submit()}
+                autoFocus/>
+            </div>
+          </div>
+
+          {/* Qty + Unit */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+            <div>
+              <div style={{fontSize:'.68rem',fontWeight:700,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Cantidad</div>
+              <input style={{width:'100%',padding:'11px 14px',borderRadius:12,border:'2px solid #F3F4F6',fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'1rem',fontWeight:700,color:'#0F0F23',background:'#F9FAFB'}}
+                type="number" min="0" step="0.1" value={form.qty} onChange={e=>setForm(f=>({...f,qty:e.target.value}))}/>
+            </div>
+            <div>
+              <div style={{fontSize:'.68rem',fontWeight:700,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Unidad</div>
+              <select style={{width:'100%',padding:'11px 14px',borderRadius:12,border:'2px solid #F3F4F6',fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:'1rem',fontWeight:700,color:'#0F0F23',background:'#F9FAFB',cursor:'pointer'}}
+                value={form.unit} onChange={e=>setForm(f=>({...f,unit:e.target.value}))}>
+                {UNITS.map(u=><option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Category */}
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:'.68rem',fontWeight:700,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>Categoría</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:7}}>
+              {CATS.map(c=>(
+                <button key={c.id} onClick={()=>setForm(f=>({...f,cat:c.id,emoji:f.emoji===gcat(f.cat).emoji?c.emoji:f.emoji}))}
+                  style={{padding:'9px 6px',borderRadius:13,border:`2px solid ${form.cat===c.id?c.dark:'transparent'}`,background:form.cat===c.id?c.light:'#F9FAFB',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:3,transition:'all .15s'}}>
+                  <span style={{fontSize:'1.2rem'}}>{c.emoji}</span>
+                  <span style={{fontSize:'.62rem',fontWeight:700,color:form.cat===c.id?c.dark:'#9CA3AF',lineHeight:1.2,textAlign:'center'}}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div style={{marginBottom:22}}>
+            <div style={{fontSize:'.68rem',fontWeight:700,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>Estado</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {[{v:'tengo',l:'✅ Lo tengo',ac:'#059669',bg:'#ECFDF5'},{v:'comprar',l:'🛒 Por comprar',ac:'#4F46E5',bg:'#EEF2FF'}].map(o=>(
+                <button key={o.v} onClick={()=>setForm(f=>({...f,status:o.v}))}
+                  style={{padding:'12px',borderRadius:13,border:`2px solid ${form.status===o.v?o.ac:'#F3F4F6'}`,background:form.status===o.v?o.bg:'#F9FAFB',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.86rem',color:form.status===o.v?o.ac:'#9CA3AF',cursor:'pointer',transition:'all .15s'}}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Save */}
+        <div style={{padding:'0 20px',paddingBottom:'max(env(safe-area-inset-bottom,0px),20px)',background:'#fff',boxShadow:'0 -1px 0 #F3F4F6'}}>
+          <button onClick={submit}
+            style={{width:'100%',padding:'16px',borderRadius:16,border:'none',background:'linear-gradient(135deg,#312E81,#4F46E5 60%,#6366F1)',color:'#fff',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:900,fontSize:'1rem',cursor:'pointer',boxShadow:'0 6px 22px rgba(79,70,229,.38)',letterSpacing:'-.3px'}}>
+            {item?'Guardar cambios':'Agregar artículo'}
+          </button>
+        </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────
+function Toast({msg,ok}) {
+  return (
+    <div style={{position:'fixed',top:16,left:'50%',transform:'translateX(-50%)',background:ok?'#1C1C2E':'#EF4444',color:'#fff',padding:'10px 22px',borderRadius:50,fontWeight:700,fontSize:'.82rem',zIndex:9990,boxShadow:'0 8px 30px rgba(0,0,0,0.2)',whiteSpace:'nowrap',animation:'fadeUp .2s ease',pointerEvents:'none'}}>
+      {msg}
+    </div>
+  );
+}
+
+// ── APP ───────────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab]         = useState('home');
+  const [items, setItems]     = useState([]);
+  const [online, setOnl]      = useState(true);
+  const [syncing, setSyn]     = useState(true);
+  const [modal, setModal]     = useState(null); // null | { item?, defaultCat? }
+  const [fCat, setFCat]       = useState('all');
+  const [fSt,  setFSt]        = useState('all');
+  const [toast, setToast]     = useState(null);
+  const tRef = useRef(null);
+
+  const showToast = (msg, ok=true) => {
+    clearTimeout(tRef.current);
+    setToast({msg,ok});
+    tRef.current = setTimeout(()=>setToast(null), 2400);
+  };
+
+  useEffect(()=>{
+    if(!DB_REF) return;
+    const unsub = DB_REF.on('value', snap=>{
+      const d=snap.val();
+      setItems(d?Object.values(d).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')):[]); 
+      setSyn(false);
+      setTimeout(()=>{const s=document.getElementById('splash');if(s){s.classList.add('hide');setTimeout(()=>s.remove(),500);}},300);
+    }, ()=>{setSyn(false);setOnl(false);});
+    const cr=firebase.database().ref('.info/connected');
+    cr.on('value',s=>setOnl(!!s.val()));
+    return ()=>{DB_REF.off('value',unsub);cr.off();};
+  },[]);
+
+  const save = item => { if(DB_REF){setSyn(true);DB_REF.child(item.id).set(item);} };
+  const del  = id   => { if(DB_REF){setSyn(true);DB_REF.child(id).remove();} };
+
+  const handleSave = (editItem, formData) => {
+    const cat = gcat(formData.cat);
+    save({
+      id: editItem?.id || uid(),
+      emoji: formData.emoji || cat.emoji,
+      name:  formData.name.trim(),
+      qty:   Number(formData.qty)||1,
+      unit:  formData.unit,
+      cat:   formData.cat,
+      status:formData.status,
+      createdAt: editItem?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    setModal(null);
+    showToast(editItem?'✏️ Artículo actualizado':'✅ Artículo agregado');
+  };
+
+  const toggle = id => {
+    const i=items.find(x=>x.id===id);
+    if(i) save({...i,status:i.status==='tengo'?'comprar':'tengo',updatedAt:new Date().toISOString()});
+  };
+  const remove = id => { del(id); showToast('🗑️ Eliminado',false); };
+  const bought = id => {
+    const i=items.find(x=>x.id===id);
+    if(i) save({...i,status:'tengo',updatedAt:new Date().toISOString()});
+    showToast('✅ ¡Comprado!');
+  };
+  const shareList = () => {
+    const lines=items.filter(i=>i.status==='comprar').map(i=>`${i.emoji||'•'} ${i.name} (${i.qty} ${i.unit})`).join('\n');
+    const text=`🏠 Piedad 17 — Lista de compras\n\n${lines}`;
+    if(navigator.share) navigator.share({title:'Piedad 17',text});
+    else navigator.clipboard.writeText(text).then(()=>showToast('📋 Lista copiada'));
+  };
+
+  const pend    = items.filter(i=>i.status==='comprar').length;
+  const tendo   = items.filter(i=>i.status==='tengo').length;
+  const petPend = items.filter(i=>i.cat==='mascotas'&&i.status==='comprar').length;
+  const shown   = items.filter(i=>(fCat==='all'||i.cat===fCat)&&(fSt==='all'||i.status===fSt));
+  const shopByCat=CATS.map(c=>({...c,its:items.filter(i=>i.status==='comprar'&&i.cat===c.id)})).filter(c=>c.its.length);
+
+  const SAFE_TOP  = 'max(env(safe-area-inset-top,0px),44px)';
+  const SAFE_BOT  = 'max(env(safe-area-inset-bottom,0px),12px)';
+
+  // ── ITEM CARD ──────────────────────────────────────────────────────────
+  const ItemCard = ({item, style={}}) => {
+    const c=gcat(item.cat);
+    return (
+      <div className="scale-in" style={{background:'#fff',borderRadius:18,padding:'13px 14px',display:'flex',alignItems:'center',gap:12,boxShadow:'0 1px 8px rgba(79,70,229,0.07)',borderLeft:`4px solid ${item.status==='tengo'?c.dark:'#E5E7EB'}`,...style}}>
+        <div style={{width:44,height:44,borderRadius:14,background:`linear-gradient(135deg,${c.grad[0]},${c.grad[1]})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',flexShrink:0,boxShadow:`0 4px 10px ${c.grad[1]}40`}}>
+          {item.emoji||c.emoji}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:700,fontSize:'.92rem',color:'#0F0F23',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+          <div style={{fontSize:'.72rem',color:'#9CA3AF',marginTop:2,display:'flex',gap:5,alignItems:'center'}}>
+            <span>{item.qty} {item.unit}</span>
+            <span style={{width:3,height:3,borderRadius:'50%',background:'#D1D5DB',display:'inline-block'}}/>
+            <span style={{color:item.status==='tengo'?c.dark:'#4F46E5',fontWeight:700}}>{item.status==='tengo'?'En casa':'Por comprar'}</span>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:5,flexShrink:0}}>
+          <button onClick={()=>toggle(item.id)} style={{width:32,height:32,border:'none',borderRadius:10,background:item.status==='tengo'?'#EEF2FF':'#ECFDF5',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            {item.status==='tengo'?<Ico n="cart" s={14} c="#4F46E5"/>:<Ico n="check" s={14} c="#059669"/>}
+          </button>
+          <button onClick={()=>setModal({item})} style={{width:32,height:32,border:'none',borderRadius:10,background:'#F0F9FF',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Ico n="edit" s={14} c="#0284C7"/>
+          </button>
+          <button onClick={()=>remove(item.id)} style={{width:32,height:32,border:'none',borderRadius:10,background:'#FFF1F2',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Ico n="trash" s={14} c="#F43F5E"/>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',background:'#F0F1FF',fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+
+      {toast && <Toast msg={toast.msg} ok={toast.ok}/>}
+
+      {modal && (
+        <ItemModal
+          item={modal.item}
+          defaultCat={modal.defaultCat}
+          onSave={fd=>handleSave(modal.item, fd)}
+          onClose={()=>setModal(null)}
+        />
+      )}
+
+      {/* SCROLLABLE CONTENT AREA */}
+      <div style={{flex:1,overflowY:'auto',overflowX:'hidden'}}>
+
+        {/* ── HOME ──────────────────────────────────────────────────────── */}
+        {tab==='home'&&(
+          <div className="fade-up">
+            {/* Header hero */}
+            <div style={{background:'linear-gradient(160deg,#312E81 0%,#4F46E5 55%,#6366F1 100%)',paddingTop:SAFE_TOP,padding:`${SAFE_TOP} 20px 28px`,position:'relative',overflow:'hidden'}}>
+              <div style={{position:'absolute',width:280,height:280,borderRadius:'50%',background:'rgba(255,255,255,.06)',top:-100,right:-80,pointerEvents:'none'}}/>
+              <div style={{position:'absolute',width:160,height:160,borderRadius:'50%',background:'rgba(255,255,255,.04)',bottom:-60,left:10,pointerEvents:'none'}}/>
+              <div style={{position:'relative',zIndex:1}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+                  <div>
+                    <div style={{color:'rgba(255,255,255,.55)',fontSize:'.75rem',fontWeight:600,marginBottom:2}}>Bienvenida 👋</div>
+                    <div style={{fontWeight:900,fontSize:'1.7rem',color:'#fff',letterSpacing:'-1px',lineHeight:1.1}}>Piedad <span style={{color:'#A5B4FC'}}>17</span></div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(255,255,255,.12)',backdropFilter:'blur(10px)',borderRadius:50,padding:'6px 12px'}}>
+                    <div style={{width:7,height:7,borderRadius:'50%',background:online?'#4ADE80':'#F87171',animation:syncing?'pulse 1s infinite':undefined}}/>
+                    <span style={{fontSize:'.7rem',fontWeight:700,color:online?'#4ADE80':'#F87171'}}>{syncing?'Sync…':online?'En línea':'Offline'}</span>
+                  </div>
+                </div>
+                {/* Stats */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+                  {[{l:'En casa',v:tendo,e:'✅'},{l:'Por comprar',v:pend,e:'🛒'},{l:'Mascotas',v:items.filter(i=>i.cat==='mascotas').length,e:'🐾'}].map((s,i)=>(
+                    <div key={i} style={{background:'rgba(255,255,255,.12)',backdropFilter:'blur(10px)',borderRadius:14,padding:'11px 10px',textAlign:'center'}}>
+                      <div style={{fontSize:'1rem',marginBottom:3}}>{s.e}</div>
+                      <div style={{fontWeight:900,fontSize:'1.2rem',color:'#fff'}}>{s.v}</div>
+                      <div style={{fontSize:'.62rem',color:'rgba(255,255,255,.6)',fontWeight:600,marginTop:1,lineHeight:1.2}}>{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{padding:'18px 16px'}}>
+              {/* Add button */}
+              <button onClick={()=>setModal({})}
+                style={{width:'100%',padding:'14px',borderRadius:16,border:'none',background:'linear-gradient(135deg,#312E81,#4F46E5)',color:'#fff',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:'1rem',cursor:'pointer',boxShadow:'0 6px 22px rgba(79,70,229,.35)',display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:22,letterSpacing:'-.3px'}}>
+                <Ico n="plus" s={18} c="#fff"/> Agregar artículo
+              </button>
+
+              {/* Categories */}
+              <div style={{fontWeight:800,fontSize:'1rem',color:'#0F0F23',marginBottom:12}}>Categorías</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:22}}>
+                {CATS.map(c=>{
+                  const count=items.filter(i=>i.cat===c.id).length;
+                  const pendC=items.filter(i=>i.cat===c.id&&i.status==='comprar').length;
+                  return (
+                    <button key={c.id} onClick={()=>{setFCat(c.id);setFSt('all');setTab('list');}}
+                      style={{background:`linear-gradient(140deg,${c.grad[0]},${c.grad[1]})`,border:'none',borderRadius:18,padding:'13px 6px',cursor:'pointer',position:'relative',boxShadow:`0 4px 14px ${c.grad[1]}35`,transition:'transform .15s'}}
+                      onMouseEnter={e=>e.currentTarget.style.transform='scale(1.05)'}
+                      onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+                      {pendC>0&&<div style={{position:'absolute',top:6,right:6,width:16,height:16,borderRadius:'50%',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.6rem',fontWeight:900,color:c.dark}}>{pendC}</div>}
+                      <div style={{fontSize:'1.5rem',marginBottom:5}}>{c.emoji}</div>
+                      <div style={{fontSize:'.62rem',fontWeight:800,color:'rgba(255,255,255,.9)',lineHeight:1.2}}>{c.label}</div>
+                      <div style={{fontSize:'.58rem',color:'rgba(255,255,255,.55)',marginTop:2}}>{count} ítem{count!==1?'s':''}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Needs buying */}
+              {pend>0&&(
+                <>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                    <div style={{fontWeight:800,fontSize:'1rem',color:'#0F0F23'}}>
+                      Por comprar&nbsp;
+                      <span style={{background:'#4F46E5',color:'#fff',borderRadius:50,padding:'1px 9px',fontSize:'.7rem'}}>{pend}</span>
+                    </div>
+                    <button onClick={()=>{setFSt('comprar');setFCat('all');setTab('list');}} style={{background:'none',border:'none',color:'#4F46E5',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.78rem',cursor:'pointer'}}>Ver todo →</button>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {items.filter(i=>i.status==='comprar').slice(0,4).map(item=>(
+                      <ItemCard key={item.id} item={item}/>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {items.length===0&&!syncing&&(
+                <div style={{textAlign:'center',padding:'40px 20px'}}>
+                  <div style={{fontSize:'3rem',marginBottom:12}}>🏠</div>
+                  <div style={{fontWeight:700,color:'#9CA3AF'}}>Tu inventario está vacío</div>
+                  <div style={{fontSize:'.82rem',color:'#C4B5FD',marginTop:6}}>Toca "Agregar artículo" para comenzar</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── LIST ──────────────────────────────────────────────────────── */}
+        {tab==='list'&&(
+          <div className="fade-up">
+            <div style={{background:'#fff',padding:`${SAFE_TOP} 16px 14px`,borderBottom:'1px solid #F3F4F6',position:'sticky',top:0,zIndex:50}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                <div style={{fontWeight:900,fontSize:'1.1rem',color:'#0F0F23'}}>Inventario</div>
+                <button onClick={()=>setModal({})} style={{display:'flex',alignItems:'center',gap:5,background:'linear-gradient(135deg,#4F46E5,#6366F1)',color:'#fff',border:'none',borderRadius:50,padding:'7px 14px',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.78rem',cursor:'pointer',boxShadow:'0 3px 10px rgba(79,70,229,.3)'}}>
+                  <Ico n="plus" s={13} c="#fff"/> Agregar
+                </button>
+              </div>
+              <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
+                {[{id:'all',l:'Todos'},{id:'tengo',l:'✅ Tengo'},{id:'comprar',l:'🛒 Comprar'}].map(f=>(
+                  <button key={f.id} onClick={()=>setFSt(f.id)} style={{padding:'6px 14px',borderRadius:50,border:'none',background:fSt===f.id?'#4F46E5':'#F3F4F6',color:fSt===f.id?'#fff':'#6B7280',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.74rem',cursor:'pointer',whiteSpace:'nowrap',transition:'all .15s'}}>{f.l}</button>
+                ))}
+                <div style={{width:1,background:'#E5E7EB',margin:'0 3px',flexShrink:0}}/>
+                {[{id:'all',l:'Todas',e:''},...CATS.map(c=>({id:c.id,l:c.label,e:c.emoji}))].map(f=>(
+                  <button key={f.id} onClick={()=>setFCat(f.id)} style={{padding:'6px 14px',borderRadius:50,border:'none',background:fCat===f.id?'#0F0F23':'#F3F4F6',color:fCat===f.id?'#fff':'#6B7280',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.74rem',cursor:'pointer',whiteSpace:'nowrap',transition:'all .15s'}}>{f.e&&f.e+' '}{f.l}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
+              {shown.length===0?(
+                <div style={{textAlign:'center',padding:'60px 20px',color:'#C4B5FD'}}>
+                  <div style={{fontSize:'2.5rem',marginBottom:10}}>🗃️</div>
+                  <div style={{fontWeight:700,color:'#9CA3AF'}}>Sin artículos</div>
+                </div>
+              ):shown.map(item=><ItemCard key={item.id} item={item}/>)}
+            </div>
+          </div>
+        )}
+
+        {/* ── COMPRAS ───────────────────────────────────────────────────── */}
+        {tab==='compras'&&(
+          <div className="fade-up">
+            <div style={{background:'#fff',padding:`${SAFE_TOP} 16px 16px`,borderBottom:'1px solid #F3F4F6'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div>
+                  <div style={{fontWeight:900,fontSize:'1.1rem',color:'#0F0F23'}}>Lista de compras</div>
+                  <div style={{fontSize:'.76rem',color:'#9CA3AF',marginTop:2}}>{pend===0?'¡Todo en casa! 🎉':`${pend} artículo${pend!==1?'s':''} pendiente${pend!==1?'s':''}`}</div>
+                </div>
+                {pend>0&&<button onClick={shareList} style={{display:'flex',alignItems:'center',gap:5,background:'#F3F4F6',border:'none',borderRadius:50,padding:'8px 14px',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.76rem',color:'#374151',cursor:'pointer'}}>
+                  <Ico n="share" s={13} c="#374151"/> Compartir
+                </button>}
+              </div>
+            </div>
+            <div style={{padding:'14px 16px'}}>
+              {shopByCat.length===0?(
+                <div style={{textAlign:'center',padding:'60px 20px'}}>
+                  <div style={{fontSize:'4rem',marginBottom:12}}>🎉</div>
+                  <div style={{fontWeight:900,fontSize:'1.1rem',color:'#374151'}}>¡Todo en casa!</div>
+                  <div style={{fontSize:'.84rem',color:'#9CA3AF',marginTop:6}}>No hay artículos pendientes</div>
+                </div>
+              ):shopByCat.map(cat=>(
+                <div key={cat.id} style={{background:'#fff',borderRadius:20,padding:'16px',marginBottom:12,boxShadow:'0 1px 8px rgba(79,70,229,0.07)'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+                    <div style={{width:38,height:38,borderRadius:12,background:`linear-gradient(135deg,${cat.grad[0]},${cat.grad[1]})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',boxShadow:`0 3px 10px ${cat.grad[1]}35`}}>{cat.emoji}</div>
+                    <div style={{flex:1,fontWeight:800,fontSize:'.95rem',color:'#0F0F23'}}>{cat.label}</div>
+                    <div style={{background:cat.light,color:cat.dark,padding:'3px 10px',borderRadius:50,fontSize:'.7rem',fontWeight:700}}>{cat.its.length}</div>
+                  </div>
+                  {cat.its.map(item=>(
+                    <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:'1px solid #F9FAFB'}}>
+                      <div style={{width:34,height:34,borderRadius:10,background:`linear-gradient(135deg,${cat.grad[0]},${cat.grad[1]})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>{item.emoji||cat.emoji}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,color:'#0F0F23',fontSize:'.88rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+                        <div style={{fontSize:'.72rem',color:'#9CA3AF',marginTop:1}}>{item.qty} {item.unit}</div>
+                      </div>
+                      <button onClick={()=>bought(item.id)} style={{display:'flex',alignItems:'center',gap:4,background:'linear-gradient(135deg,#10B981,#059669)',color:'#fff',border:'none',borderRadius:50,padding:'7px 13px',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:'.74rem',cursor:'pointer',boxShadow:'0 3px 10px rgba(5,150,105,.3)',flexShrink:0}}>
+                        <Ico n="check" s={12} c="#fff"/> Comprado
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── MASCOTAS ──────────────────────────────────────────────────── */}
+        {tab==='mascotas'&&(
+          <div className="fade-up">
+            <div style={{background:'linear-gradient(160deg,#831843,#BE185D 55%,#EC4899)',paddingTop:SAFE_TOP,padding:`${SAFE_TOP} 20px 28px`,position:'relative',overflow:'hidden'}}>
+              <div style={{position:'absolute',width:200,height:200,borderRadius:'50%',background:'rgba(255,255,255,.07)',top:-60,right:-40,pointerEvents:'none'}}/>
+              <div style={{fontWeight:900,fontSize:'1.6rem',color:'#fff',letterSpacing:'-1px'}}>Mascotas <span style={{fontSize:'1.3rem'}}>🐾</span></div>
+              <div style={{color:'rgba(255,255,255,.6)',fontSize:'.8rem',marginTop:4}}>Inventario de tus compañeros</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginTop:16}}>
+                {[{l:'Total',v:items.filter(i=>i.cat==='mascotas').length},{l:'Disponible',v:items.filter(i=>i.cat==='mascotas'&&i.status==='tengo').length},{l:'Comprar',v:petPend}].map((s,i)=>(
+                  <div key={i} style={{background:'rgba(255,255,255,.14)',backdropFilter:'blur(10px)',borderRadius:14,padding:'11px',textAlign:'center'}}>
+                    <div style={{fontWeight:900,fontSize:'1.2rem',color:'#fff'}}>{s.v}</div>
+                    <div style={{fontSize:'.62rem',color:'rgba(255,255,255,.6)',fontWeight:600,marginTop:1}}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:'16px'}}>
+              <button onClick={()=>setModal({defaultCat:'mascotas'})}
+                style={{width:'100%',padding:'13px',borderRadius:16,border:'none',background:'linear-gradient(135deg,#831843,#BE185D)',color:'#fff',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:'.95rem',cursor:'pointer',boxShadow:'0 5px 18px rgba(190,24,93,.35)',display:'flex',alignItems:'center',justifyContent:'center',gap:7,marginBottom:16}}>
+                <Ico n="plus" s={16} c="#fff"/> Agregar para mascota
+              </button>
+              {items.filter(i=>i.cat==='mascotas').length===0?(
+                <div style={{textAlign:'center',padding:'40px 20px',color:'#FBCFE8'}}>
+                  <div style={{fontSize:'3rem',marginBottom:10}}>🐶🐱</div>
+                  <div style={{fontWeight:700,color:'#9CA3AF'}}>Sin artículos de mascotas</div>
+                </div>
+              ):<div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {items.filter(i=>i.cat==='mascotas').map(item=><ItemCard key={item.id} item={item}/>)}
+              </div>}
+            </div>
+          </div>
+        )}
+
+      </div>{/* end scrollable */}
+
+      {/* ── BOTTOM NAV ────────────────────────────────────────────────────── */}
+      <div style={{
+        background:'rgba(255,255,255,0.96)',
+        backdropFilter:'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)',
+        borderTop:'1px solid rgba(79,70,229,0.08)',
+        display:'flex',
+        paddingBottom:SAFE_BOT,
+        boxShadow:'0 -4px 20px rgba(79,70,229,0.08)',
+        flexShrink:0,
+        zIndex:100,
+      }}>
+        {[
+          {id:'home',    ico:'home',  label:'Inicio'},
+          {id:'list',    ico:'list',  label:'Lista'},
+          {id:'compras', ico:'cart',  label:'Compras',  badge:pend},
+          {id:'mascotas',ico:'paw',   label:'Mascotas', badge:petPend},
+        ].map(({id,ico,label,badge})=>(
+          <button key={id} onClick={()=>setTab(id)}
+            style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4,border:'none',background:'none',cursor:'pointer',padding:'10px 0 4px',position:'relative',transition:'opacity .15s'}}>
+            {badge>0&&<div style={{position:'absolute',top:6,right:'calc(50% - 18px)',width:17,height:17,borderRadius:'50%',background:'#4F46E5',color:'#fff',fontSize:'.6rem',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff',boxShadow:'0 2px 6px rgba(79,70,229,.4)'}}>{badge}</div>}
+            <div style={{width:36,height:36,borderRadius:12,background:tab===id?'linear-gradient(135deg,#4F46E5,#6366F1)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .25s',transform:tab===id?'scale(1.1)':'scale(1)',boxShadow:tab===id?'0 4px 14px rgba(79,70,229,.35)':'none'}}>
+              <Ico n={ico} s={18} c={tab===id?'#fff':'#9CA3AF'}/>
+            </div>
+            <span style={{fontSize:'.6rem',fontWeight:700,color:tab===id?'#4F46E5':'#9CA3AF',transition:'color .2s'}}>{label}</span>
+          </button>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+if(!IS_READY) setTimeout(()=>{const s=document.getElementById('splash');if(s){s.classList.add('hide');setTimeout(()=>s.remove(),500);}},400);
+</script>
+
+<script>
+// PWA full-screen install
+let deferredPrompt = null;
+const modal  = document.getElementById('install-modal');
+const btnYes = document.getElementById('install-btn');
+const btnNo  = document.getElementById('install-later');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show after 4 seconds
+  setTimeout(() => modal.classList.add('show'), 4000);
+});
+
+btnYes.addEventListener('click', async () => {
+  modal.classList.remove('show');
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  }
+});
+
+btnNo.addEventListener('click', () => {
+  modal.classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  modal.classList.remove('show');
+  deferredPrompt = null;
+});
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+
+// iOS install hint
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandalone = window.navigator.standalone;
+if (isIOS && !isInStandalone) {
+  setTimeout(() => {
+    const hint = document.createElement('div');
+    hint.innerHTML = `<div style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1C1C2E;color:#fff;padding:10px 16px;border-radius:14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;white-space:nowrap;z-index:300;box-shadow:0 8px 30px rgba(0,0,0,0.3);animation:fadeUp .3s ease">📲 Toca <strong>Compartir</strong> → <strong>Añadir a inicio</strong></div>`;
+    document.body.appendChild(hint);
+    setTimeout(() => hint.remove(), 5000);
+  }, 3000);
+}
+</script>
+</body>
+</html>
